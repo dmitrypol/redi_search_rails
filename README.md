@@ -4,7 +4,7 @@ This gems simplifies integration with RediSearch module (http://redisearch.io/).
 
 ## Installation
 
-Install Redis and RediSearch following instructions on http://redisearch.io/Quick_Start/.  
+Install Redis and RediSearch following instructions on http://redisearch.io/Quick_Start/.  Until modules are released with Redis 4 this requires compiling Redis from unstable branch from GitHub.  
 
 Add this line to your application's Gemfile:
 
@@ -33,15 +33,21 @@ REDI_SEARCH = Redis.new(host: '127.0.0.1', port: '6379')
 ```ruby
 class User < ApplicationRecord
   include RediSearchRails
-  redisearch_schema   name: 'TEXT', email: 'TEXT', age: 'NUMERIC'
+  redi_search_schema   name: 'TEXT', email: 'TEXT', age: 'NUMERIC'
 end
-# => create index
-rails r User.ft_create
-# => populate with records
-rails r User.ft_add_all
+# => to create index run in rails console
+User.ft_create
+# => populate index with records for all users
+User.ft_add_all
+# => or you can do it for specific record
+User.ft_add(User.where(id: 1))
 # => search
-rails r "User.ft_search('query here')"
+User.ft_search('keyword here')
+# => output
+[1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
 ```
+
+As unique identifier (docId) for records in Redis it uses https://github.com/rails/globalid.  You need to make sure you models support it if you are using ORM other than ActiveRecord.  
 
 ## Development
 
@@ -49,16 +55,22 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
+## Testing
+
+Testing this gem requires having local Redis with RediSearch module.  This makes it very difficult to set it up with services like Codeship.  
+
 ## TODOs
 
 * Tests
+* Document methods
 * Support additional RediSearch API calls (SUGGADD, SUGGET, ...)
-* Support configuring SCORE
-* Rake tasks
-* ActiveModel callbacks to index records on saving
+* Support configuring SCORE, WEIGHT and other options
+* Rake tasks to manage indexes
+* ActiveModel callbacks to index records on saving and remove from Redis on delete
 * Support indexing fields from related models (index group name if user belongs to a group)
 * Stopwords configuration
 * Minimum keyword length to index
+* Configurable method for docId, not just default to_global_id
 
 ## Contributing
 
