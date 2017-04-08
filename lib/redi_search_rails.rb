@@ -4,6 +4,9 @@ require "active_support/concern"
 module RediSearchRails
   extend ActiveSupport::Concern
 
+  included do
+  end
+
   module ClassMethods
 
     # will configure the RediSearch for the specific model
@@ -77,9 +80,10 @@ module RediSearchRails
 
     # delete specific document from index
     #
-    # @param  [doc_id] ID of the document, default is the Rails globalid
+    # @param record [Object] Object to delete
     # @return [String]
-    def ft_del doc_id
+    def ft_del record
+      doc_id = record.to_global_id
       REDI_SEARCH.call('FT.DEL', @@index_name, doc_id)
     rescue Exception => e
       Rails.logger.error e

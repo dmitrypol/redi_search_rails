@@ -43,8 +43,7 @@ RSpec.describe RediSearchRails do
 
   it "ft_del" do
     User.ft_create
-    doc_id = User.new.to_global_id
-    test = User.ft_del(doc_id)
+    test = User.ft_del(User.new)
     expect(test).to eq 0
   end
 
