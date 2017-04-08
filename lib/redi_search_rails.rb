@@ -24,7 +24,7 @@ module RediSearchRails
     # @return [Array]   [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
     # @raise [RuntimeError]
     def ft_search keyword
-      results = REDI_SEARCH.call('FT.SEARCH', @@index_name, query,
+      results = REDI_SEARCH.call('FT.SEARCH', @@index_name, keyword,
        #'LIMIT', 0, 1000,
        #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
       )
@@ -110,7 +110,7 @@ module RediSearchRails
     #
     # @return [String]
     def ft_info
-      ap REDI_SEARCH.call('FT.INFO', @@index_name)
+      REDI_SEARCH.call('FT.INFO', @@index_name)
     rescue Exception => e
       Rails.logger.error e
       return e.message

@@ -1,5 +1,7 @@
 require "bundler/setup"
 require "redi_search_rails"
+require "active_model"
+require "redis"
 
 Dir["#{File.dirname(__FILE__)}/models/*.rb"].each { |file| require file }
 
