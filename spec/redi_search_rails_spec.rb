@@ -16,6 +16,8 @@ RSpec.describe RediSearchRails do
   it "redi_search_schema" do
     test = User.redi_search_schema(name: 'TEXT', age: 'NUMERIC')
     expect(test).to eq 1
+    # test = Role.redi_search_schema(name: 'TEXT')
+    # expect(test).to eq 1
   end
 
   it "ft_search" do
