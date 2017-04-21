@@ -20,9 +20,15 @@ RSpec.describe RediSearchRails do
 
   it "ft_search" do
     User.ft_create
-    User.ft_add(User.new(name: 'Bob', age: 100))
+    User.ft_add(User.new(name: 'Bob Smith', age: 100))
+    User.ft_add(User.new(name: 'Bobs', age: 50))
     test = User.ft_search('bob')
     expect(test).not_to be nil
+    expect(test.count).to eq 2
+    expect(test[0]['name']).to eq 'Bob Smith'
+    expect(test[0]['age']).to eq '100'
+    expect(test[1]['name']).to eq 'Bobs'
+    expect(test[1]['age']).to eq '50'
   end
 
   it "ft_create" do
@@ -30,15 +36,19 @@ RSpec.describe RediSearchRails do
     expect(test).to eq 0
   end
 
-  xit "ft_add_all" do
+  it "ft_add_all" do
     User.ft_create
+    User.new(name: 'Bob', age: 100)
+    User.new(name: 'Bobs', age: 50)
     User.ft_add_all
   end
 
   it "ft_add" do
     User.ft_create
-    test = User.ft_add(User.new(name: 'Bob', age: 100))
+    test = User.ft_add(User.new(name: 'Bob Smith', age: 100))
     expect(test).to eq 'OK'
+    test2 = User.ft_search('bob')
+    expect(test2[0]['age']).to eq '100'
   end
 
   it "ft_del" do

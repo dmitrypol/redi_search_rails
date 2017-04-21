@@ -24,16 +24,27 @@ module RediSearchRails
     # search the index for specific keyword(s)
     #
     # @param keyword [String]  'some keyword'
-    # @return [Array]   [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
+    # @return [Array]   [{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, ...]
     # @raise [RuntimeError]
     def ft_search keyword
       results = REDI_SEARCH.call('FT.SEARCH', @@index_name, keyword,
        #'LIMIT', 0, 1000,
        #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
       )
-      return results
+      # => [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
+      # => transform into array of hashes
+      output = []
+      results.shift  # => remove count
+      results.each_slice(2) do |result|
+        attributes = {}
+        result[1].each_slice(2) do |attribute|
+          attributes[attribute[0]] = attribute[1]
+        end
+        output << {id: result[0]}.merge(attributes)
+      end
+      return output
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -47,7 +58,7 @@ module RediSearchRails
       )
       ft_optimize
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -57,7 +68,7 @@ module RediSearchRails
     def ft_add_all
       @@model.all.each {|record| ft_add(record) }
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -68,13 +79,13 @@ module RediSearchRails
     def ft_add record
       fields = []
       @@fields.each { |field| fields.push(field, record.send(field)) }
-      REDI_SEARCH.call('FT.ADD', @@index_name, record.to_global_id, @@score,
+      REDI_SEARCH.call('FT.ADD', @@index_name, record.to_global_id.to_s, @@score,
         'REPLACE',
         #'NOSAVE', 'PAYLOAD', record.name,
         'FIELDS', fields
       )
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -86,7 +97,7 @@ module RediSearchRails
       doc_id = record.to_global_id
       REDI_SEARCH.call('FT.DEL', @@index_name, doc_id)
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -96,7 +107,7 @@ module RediSearchRails
     def ft_optimize
       REDI_SEARCH.call('FT.OPTIMIZE', @@index_name)
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -106,7 +117,7 @@ module RediSearchRails
     def ft_drop
       REDI_SEARCH.call('FT.DROP', @@index_name)
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 
@@ -116,7 +127,7 @@ module RediSearchRails
     def ft_info
       REDI_SEARCH.call('FT.INFO', @@index_name)
     rescue Exception => e
-      Rails.logger.error e
+      Rails.logger.error e if defined? Rails
       return e.message
     end
 

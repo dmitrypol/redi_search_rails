@@ -44,7 +44,7 @@ User.ft_add(User.where(id: 1))
 # => search
 User.ft_search('keyword here')
 # => output
-[1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
+[{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, {...}]
 ```
 
 As unique identifier (doc_id) for records in Redis it uses https://github.com/rails/globalid.  You need to make sure you models support it if you are using ORM other than ActiveRecord.  
