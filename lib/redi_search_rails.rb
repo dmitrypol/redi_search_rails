@@ -24,14 +24,29 @@ module RediSearchRails
     # search the index for specific keyword(s)
     #
     # @param keyword [String]  'some keyword'
-    # @return [Array]   [{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, ...]
+    # @param offset [Integer]   default 0
+    # @param keyword [Integer]  default 10
+    # @return [Array]   [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
     # @raise [RuntimeError]
-    def ft_search keyword
+    def ft_search keyword:, offset: 0, num: 10
       results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword,
-       #'LIMIT', 0, 1000,
+       'LIMIT', offset, num,
        #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
       )
-      # => [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
+      return results
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # search the index for specific keyword(s) and return output as array of hashes
+    #
+    # @param keyword [String]  'some keyword'
+    # @param offset [Integer]   default 0
+    # @param keyword [Integer]  default 10
+    # @return [Array]   [{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, ...]
+    def ft_search_format(args)
+      results = ft_search(args)
       # => transform into array of hashes
       output = []
       results.shift  # => remove count
@@ -43,6 +58,19 @@ module RediSearchRails
         output << {id: result[0]}.merge(attributes)
       end
       return output
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # number of records found for keywords
+    #
+    # @param keyword [String]  'some keyword'
+    # @param offset [Integer]   default 0
+    # @param keyword [Integer]  default 10
+    # @return [Integer]   1
+    def ft_search_count(args)
+      ft_search(args).first
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message
@@ -66,7 +94,7 @@ module RediSearchRails
     #
     # @return [String]
     def ft_add_all
-      @model.all.each {|record| ft_add(record) }
+      @model.all.each {|record| ft_add(record: record) }
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message
@@ -76,7 +104,7 @@ module RediSearchRails
     #
     # @param record [Object] Object to index
     # @return [String]
-    def ft_add record
+    def ft_add record:
       fields = []
       @fields.each { |field| fields.push(field, record.send(field)) }
       REDI_SEARCH.call('FT.ADD', @index_name, record.to_global_id.to_s, @score,
@@ -93,7 +121,7 @@ module RediSearchRails
     #
     # @param record [Object] Object to delete
     # @return [String]
-    def ft_del record
+    def ft_del record:
       doc_id = record.to_global_id
       REDI_SEARCH.call('FT.DEL', @index_name, doc_id)
     rescue Exception => e
