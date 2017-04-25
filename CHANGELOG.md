@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - ft_search_format and ft_search_count methods
+- ft_search_format returns array of objects
 
 ### Changed
 - ft_search returns raw FT.SEARCH results

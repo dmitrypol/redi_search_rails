@@ -1,5 +1,6 @@
 require "redi_search_rails/version"
 require "active_support/concern"
+require "ostruct"
 
 module RediSearchRails
   extend ActiveSupport::Concern
@@ -29,7 +30,8 @@ module RediSearchRails
     # @return [Array]   [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
     # @raise [RuntimeError]
     def ft_search keyword:, offset: 0, num: 10
-      results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword,
+      return [0] if keyword.blank?    # => https://github.com/RedisLabsModules/RediSearch/issues/41
+      results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword.strip,
        'LIMIT', offset, num,
        #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
       )
@@ -39,7 +41,7 @@ module RediSearchRails
       return e.message
     end
 
-    # search the index for specific keyword(s) and return output as array of hashes
+    # search the index for specific keyword(s) and return output as array of objects
     #
     # @param keyword [String]  'some keyword'
     # @param offset [Integer]   default 0
@@ -47,7 +49,7 @@ module RediSearchRails
     # @return [Array]   [{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, ...]
     def ft_search_format(args)
       results = ft_search(args)
-      # => transform into array of hashes
+      # => transform into array of objects
       output = []
       results.shift  # => remove count
       results.each_slice(2) do |result|
@@ -55,7 +57,8 @@ module RediSearchRails
         result[1].each_slice(2) do |attribute|
           attributes[attribute[0]] = attribute[1]
         end
-        output << {id: result[0]}.merge(attributes)
+        hash = {id: result[0]}.merge(attributes)
+        output << OpenStruct.new(hash)
       end
       return output
     rescue Exception => e
@@ -95,6 +98,7 @@ module RediSearchRails
     # @return [String]
     def ft_add_all
       @model.all.each {|record| ft_add(record: record) }
+      ft_optimize
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message

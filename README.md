@@ -45,7 +45,7 @@ User.ft_add(User.where(id: 1))
 User.ft_search(keyword: 'keyword here', offset: 0, num: 10)
 # => output
 [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
-# => format results as array of hashes
+# => format results as array of objects
 User.ft_search_format(keyword: 'keyword here', offset: 0, num: 10)
 # => output
 [{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, {...}]

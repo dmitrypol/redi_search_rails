@@ -23,31 +23,38 @@ RSpec.describe RediSearchRails do
   context 'ft_search' do
     before(:each) do
       User.ft_create
-      User.ft_add(record: User.new(name: 'Bob Smith', age: 100))
+      User.ft_add(record: User.new(name: 'Bob Smith', age: 100, email: 'bob@gmail.com'))
       User.ft_add(record: User.new(name: 'Bobs', age: 50))
       Role.ft_create
       Role.ft_add(record: Role.new(name: 'admin'))
     end
     it "ft_search" do
-      expect(User.ft_search(keyword: 'bob')).not_to eq nil
+      expect(User.ft_search(keyword: '  bob  ')).not_to eq nil
       expect(User.ft_search(keyword: 'foo')).to eq [0]
       expect(Role.ft_search(keyword: 'admin')).not_to eq nil
       expect(Role.ft_search(keyword: 'bar')).to eq [0]
+      expect(User.ft_search(keyword: '')).to eq [0]
     end
     it 'ft_search_format' do
       test = User.ft_search_format(keyword: 'bob')
       expect(test.count).to eq 2
-      expect(test[0]['name']).to eq 'Bob Smith'
-      expect(test[0]['age']).to eq '100'
-      expect(test[1]['name']).to eq 'Bobs'
-      expect(test[1]['age']).to eq '50'
-      # =>
+      expect(test[0].name).to eq 'Bob Smith'
+      expect(test[0].age).to eq '100'
+      expect(test[1].name).to eq 'Bobs'
+      expect(test[1].age).to eq '50'
+      # => invalid
       test = User.ft_search_format(keyword: 'foo')
+      expect(test).to eq []
+      # => blank
+      test = User.ft_search_format(keyword: '')
+      expect(test).to eq []
+      # => spaces
+      test = User.ft_search_format(keyword: '   ')
       expect(test).to eq []
       # =>
       test = Role.ft_search_format(keyword: 'admin')
       expect(test.count).to eq 1
-      expect(test[0]['name']).to eq 'admin'
+      expect(test[0].name).to eq 'admin'
     end
     it "ft_search_count" do
       expect(User.ft_search_count(keyword: 'bob')).to eq 2
@@ -60,6 +67,11 @@ RSpec.describe RediSearchRails do
       expect(User.ft_search(keyword: 'Tom').first).to eq 20
       expect(User.ft_search_format(keyword: 'Tom', offset: 0, num: 100).count).to eq 20
       expect(User.ft_search_count(keyword: 'Tom', offset: 0, num: 100)).to eq 20
+      expect(User.ft_search(keyword: 'Tom', offset: '', num: '').first).to eq 20
+    end
+    xit 'special chars' do
+      User.ft_search(keyword: 'bob@gmail.com')
+      # =>  TODO "Syntax error at offset 10 near 'com'"
     end
   end
 
