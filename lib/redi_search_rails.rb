@@ -30,7 +30,6 @@ module RediSearchRails
     # @return [Array]   [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
     # @raise [RuntimeError]
     def ft_search keyword:, offset: 0, num: 10
-      return [0] if keyword.blank?    # => https://github.com/RedisLabsModules/RediSearch/issues/41
       results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword.strip,
        'LIMIT', offset, num,
        #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
