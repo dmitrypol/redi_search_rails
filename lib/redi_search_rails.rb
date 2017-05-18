@@ -29,11 +29,17 @@ module RediSearchRails
     # @param keyword [Integer]  default 10
     # @return [Array]   [1, "gid://application_name/User/unique_id", ["name", "Bob", "age", "100"]]
     # @raise [RuntimeError]
-    def ft_search keyword:, offset: 0, num: 10
-      results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword.strip,
-       'LIMIT', offset, num,
-       #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
-      )
+    def ft_search keyword:, offset: 0, num: 10, filter: {}
+      if filter[:numeric_field].blank?
+        results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword.strip,
+          'LIMIT', offset, num)
+      else
+        results = REDI_SEARCH.call('FT.SEARCH', @index_name, keyword.strip,
+          'LIMIT', offset, num,
+          'FILTER', filter[:numeric_field], filter[:min], filter[:max]
+        )
+      end
+      #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
       return results
     rescue Exception => e
       Rails.logger.error e if defined? Rails
@@ -115,6 +121,28 @@ module RediSearchRails
         #'NOSAVE', 'PAYLOAD', record.name,
         'FIELDS', fields
       )
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # index existing Hash
+    #
+    # @param record [string] key of existing HASH key in Redis that will hold the fields the index needs.
+    # @return [String]
+    def ft_addhash record:
+      REDI_SEARCH.call('FT.ADDHASH', @index_name, record, @score, 'REPLACE')
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # delete all records in specific model
+    #
+    # @return [String]
+    def ft_del_all
+      @model.all.each {|record| ft_del(record: record) }
+      ft_optimize
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message

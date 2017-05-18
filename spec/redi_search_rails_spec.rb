@@ -69,6 +69,19 @@ RSpec.describe RediSearchRails do
       expect(User.ft_search_count(keyword: 'Tom', offset: 0, num: 100)).to eq 20
       expect(User.ft_search(keyword: 'Tom', offset: '', num: '').first).to eq 20
     end
+    it 'filter' do
+      User.ft_add(record: User.new(name: 'Tom', age: 100))
+      User.ft_add(record: User.new(name: 'Tom', age: 50))
+      # =>
+      test = User.ft_search(keyword: 'Tom', filter: {numeric_field: 'age', min: 50, max: 100})
+      expect(test.first).to eq 2
+      # =>
+      test = User.ft_search(keyword: 'Tom', filter: {numeric_field: 'age', min: 50, max: 60})
+      expect(test.first).to eq 1
+      # =>
+      test = User.ft_search(keyword: 'Tom', filter: {numeric_field: 'age', min: 10, max: 20})
+      expect(test.first).to eq 0
+    end
     xit 'special chars' do
       User.ft_search(keyword: 'bob@gmail.com')
       # =>  TODO "Syntax error at offset 10 near 'com'"
@@ -97,6 +110,25 @@ RSpec.describe RediSearchRails do
     expect(test).to eq 'OK'
     test = User.ft_search(keyword: 'bob')
     expect(test.first).to eq 1
+  end
+
+  it "ft_addhash" do
+    User.ft_create
+    record = REDI_SEARCH.hmset("user1", "name", "Bob Smith", "age", "100")
+    test = User.ft_addhash(record: "user1")
+    expect(test).to eq 'OK'
+    test = User.ft_search(keyword: 'bob')
+    expect(test).to eq [1, "user1", ["name", "Bob Smith", "age", "100"]]
+  end
+
+  it "ft_del_all" do
+    User.ft_create
+    User.new(name: 'Bob', age: 100)
+    User.new(name: 'Bobs', age: 50)
+    User.ft_add_all
+    User.ft_del_all
+    test = User.ft_search(keyword: 'bob')
+    expect(test.first).to eq 0
   end
 
   it "ft_del" do
