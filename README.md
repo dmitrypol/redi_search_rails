@@ -67,7 +67,6 @@ Testing this gem requires having local Redis with RediSearch module.  This makes
 
 * ActiveModel callbacks to index records on saving and remove from Redis on delete
 * Rake tasks to manage indexes
-* Support additional RediSearch API calls (SUGGADD, SUGGET, ...)
 * Support configuring SCORE, WEIGHT and other options
 * Support indexing fields from related models (index group name if user belongs to a group)
 * Stopwords configuration

@@ -68,6 +68,8 @@ RSpec.describe RediSearchRails do
       expect(User.ft_search_format(keyword: 'Tom', offset: 0, num: 100).count).to eq 20
       expect(User.ft_search_count(keyword: 'Tom', offset: 0, num: 100)).to eq 20
       expect(User.ft_search(keyword: 'Tom', offset: '', num: '').first).to eq 20
+      expect(User.ft_search_format(keyword: 'Tom', offset: 0, num: 5).count).to eq 5
+      expect(User.ft_search_format(keyword: 'Tom', offset: 10, num: 7).count).to eq 7
     end
     it 'filter' do
       User.ft_add(record: User.new(name: 'Tom', age: 100))
@@ -115,7 +117,7 @@ RSpec.describe RediSearchRails do
   it "ft_addhash" do
     User.ft_create
     record = REDI_SEARCH.hmset("user1", "name", "Bob Smith", "age", "100")
-    test = User.ft_addhash(record: "user1")
+    test = User.ft_addhash(redis_key: "user1")
     expect(test).to eq 'OK'
     test = User.ft_search(keyword: 'bob')
     expect(test).to eq [1, "user1", ["name", "Bob Smith", "age", "100"]]
@@ -157,6 +159,52 @@ RSpec.describe RediSearchRails do
     Role.ft_create
     expect(User.ft_info).not_to be nil
     expect(Role.ft_info).not_to be nil
+  end
+
+  context 'ft_sug' do
+    before(:each) do
+      ['Bob', 'Bobby', 'Mary'].each_with_index do |name, index|
+        User.new(name: name)
+        test = User.ft_sugadd(attribute: 'name', value: name)
+        expect(test).to eq index + 1
+      end
+    end
+    it "ft_sugadd_all" do
+      User.new(email: 'foo')
+      User.new(email: 'bar')
+      User.ft_sugadd_all(attribute: 'email')
+      #test = expect(User.ft_suglen(attribute: 'email')).to eq 2
+    end
+    it "ft_sugadd" do
+      User.new(email: 'foo')
+      expect(User.ft_sugadd(attribute: 'email', value: 'foo')).to eq 1
+    end
+    it "ft_sugget" do
+      test = User.ft_sugget(attribute: 'name', prefix: 'b')
+      expect(test).to eq ["Bob", "Bobby"]
+      test = User.ft_sugget(attribute: 'name', prefix: 'm')
+      expect(test).to eq ["Mary"]
+    end
+    it "ft_sugdel" do
+      test = User.ft_sugdel(attribute: 'name', string: 'Bob')
+      expect(test).to eq 1
+      test = User.ft_sugdel(attribute: 'name', string: 'Tom')
+      expect(test).to eq 0
+    end
+    it "ft_sugdel_all" do
+      User.new(email: 'foo')
+      User.new(email: 'bar')
+      User.ft_sugadd_all(attribute: 'email')
+      User.ft_sugdel_all(attribute: 'email')
+      expect(User.ft_suglen(attribute: 'email')).to eq 0
+    end
+    it "ft_suglen" do
+      expect(User.ft_suglen(attribute: 'name')).to eq 3
+      User.ft_sugadd(attribute: 'name', value: 'Tom')
+      expect(User.ft_suglen(attribute: 'name')).to eq 4
+      User.ft_sugdel(attribute: 'name', string: 'Tom')
+      expect(User.ft_suglen(attribute: 'name')).to eq 3
+    end
   end
 
 end

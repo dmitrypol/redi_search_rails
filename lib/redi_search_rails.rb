@@ -39,7 +39,8 @@ module RediSearchRails
           'FILTER', filter[:numeric_field], filter[:min], filter[:max]
         )
       end
-      #'NOCONTENT', #'VERBATIM',  #'WITHSCORES', #'NOSTOPWORDS', #'WITHPAYLOADS',
+      #'NOCONTENT', 'VERBATIM',  'WITHSCORES', 'NOSTOPWORDS', 'WITHPAYLOADS',
+      #'INKEYS', 'INFIELDS', 'SLOP', 'LANGUAGE', 'EXPANDER', 'SCORER', 'PAYLOAD', 'SORTBY'
       return results
     rescue Exception => e
       Rails.logger.error e if defined? Rails
@@ -89,8 +90,8 @@ module RediSearchRails
     # @return [String]
     def ft_create
       REDI_SEARCH.call('FT.CREATE', @index_name,
-        #'NOFIELDS', 'NOSCOREIDX', 'NOOFFSETS',
         'SCHEMA', @schema
+        #'NOFIELDS', 'NOSCOREIDX', 'NOOFFSETS',
       )
       ft_optimize
     rescue Exception => e
@@ -118,8 +119,8 @@ module RediSearchRails
       @fields.each { |field| fields.push(field, record.send(field)) }
       REDI_SEARCH.call('FT.ADD', @index_name, record.to_global_id.to_s, @score,
         'REPLACE',
-        #'NOSAVE', 'PAYLOAD', record.name,
         'FIELDS', fields
+        #'NOSAVE', 'PAYLOAD', 'LANGUAGE'
       )
     rescue Exception => e
       Rails.logger.error e if defined? Rails
@@ -130,8 +131,8 @@ module RediSearchRails
     #
     # @param record [string] key of existing HASH key in Redis that will hold the fields the index needs.
     # @return [String]
-    def ft_addhash record:
-      REDI_SEARCH.call('FT.ADDHASH', @index_name, record, @score, 'REPLACE')
+    def ft_addhash redis_key:
+      REDI_SEARCH.call('FT.ADDHASH', @index_name, redis_key, @score, 'REPLACE')
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message
@@ -185,6 +186,80 @@ module RediSearchRails
     # @return [String]
     def ft_info
       REDI_SEARCH.call('FT.INFO', @index_name)
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # add all values for a model attribute to autocomplete
+    #
+    # @param attribute [String] - name, email, etc
+    def ft_sugadd_all (attribute:)
+      @model.all.each {|record| ft_sugadd(attribute: attribute, value: record.send(attribute)) }
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # add string to autocomplete dictionary
+    #
+    # @param attribute [String] - name, email, etc
+    # @param value [String] - actual value
+    # @param score [Integer] - score
+    # @return [Integer] - current size of the dictionary
+    def ft_sugadd (attribute:, value:, score: 1)
+      # => combine model with attribute to create unique key like user_name
+      key = "#{@model.to_s}:#{attribute}"
+      REDI_SEARCH.call('FT.SUGADD', key, value, score)
+      # => INCR
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # query dictionary for suggestion
+    #
+    # @param attribute [String] - name, email, etc
+    # @param prefix [String] - prefix to query dictionary
+    # @return [Array] - suggestions for prefix
+    def ft_sugget (attribute:, prefix:)
+      key = "#{@model}:#{attribute}"
+      REDI_SEARCH.call('FT.SUGGET', key, prefix)
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # delete all values for a model attribute to autocomplete
+    #
+    # @param attribute [String] - name, email, etc
+    def ft_sugdel_all (attribute:)
+      @model.all.each {|record| ft_sugdel(attribute: attribute, value: record.send(attribute)) }
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # delete a string from a suggestion index.
+    #
+    # @param attribute [String]
+    # @param value [String] - string to delete
+    # @return [Integer] - 1 if found, 0 if not
+    def ft_sugdel (attribute:, string:)
+      key = "#{@model}:#{attribute}"
+      REDI_SEARCH.call('FT.SUGDEL', key, string)
+    rescue Exception => e
+      Rails.logger.error e if defined? Rails
+      return e.message
+    end
+
+    # size of dictionary
+    #
+    # @param attribute [String]
+    # @return [Integer] - number of possible suggestions
+    def ft_suglen (attribute:)
+      key = "#{@model}:#{attribute}"
+      REDI_SEARCH.call('FT.SUGLEN', key)
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message

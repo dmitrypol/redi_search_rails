@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - ft_search_format and ft_search_count methods
 - ft_search_format returns array of objects
+- ft_add_hash and ft_del_all methods
+- ft_sug* methods
 
 ### Changed
 - ft_search returns raw FT.SEARCH results
