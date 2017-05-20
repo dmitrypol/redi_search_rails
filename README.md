@@ -53,9 +53,11 @@ User.ft_search(keyword: 'keyword here', offset: 0, num: 10)
 User.ft_search_format(keyword: 'keyword here', offset: 0, num: 10)
 # => output
 [{"id": "gid://application_name/User/unique_id", "name": "Bob", "age": "100"}, {...}]
+# => for autocomplete
+User.ft_sugadd(record: user, attribute: name)
 ```
 
-As unique identifier (doc_id) for records in Redis it uses https://github.com/rails/globalid.  You need to make sure you models support it if you are using ORM other than ActiveRecord.  
+As unique identifier (doc_id) for records in Redis this gem uses [GlobalID](https://github.com/rails/globalid).  You need to make sure your models support it if you are using ORM other than [ActiveRecord](http://guides.rubyonrails.org/active_record_basics.html).  
 
 ## Development
 
