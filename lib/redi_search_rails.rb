@@ -74,10 +74,8 @@ module RediSearchRails
 
     # number of records found for keywords
     #
-    # @param keyword [String]  'some keyword'
-    # @param offset [Integer]   default 0
-    # @param keyword [Integer]  default 10
-    # @return [Integer]   1
+    # @param keyword [Hash]  keyword that gets passed to ft_search
+    # @return [Integer]   number of results matching the search
     def ft_search_count(args)
       ft_search(args).first
     rescue Exception => e
@@ -195,7 +193,7 @@ module RediSearchRails
     #
     # @param attribute [String] - name, email, etc
     def ft_sugadd_all (attribute:)
-      @model.all.each {|record| ft_sugadd(attribute: attribute, value: record.send(attribute)) }
+      @model.all.each {|record| ft_sugadd(record: record, attribute: attribute) }
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message
@@ -203,14 +201,15 @@ module RediSearchRails
 
     # add string to autocomplete dictionary
     #
+    # @param record [Object] object
     # @param attribute [String] - name, email, etc
-    # @param value [String] - actual value
     # @param score [Integer] - score
     # @return [Integer] - current size of the dictionary
-    def ft_sugadd (attribute:, value:, score: 1)
+    def ft_sugadd (record:, attribute:, score: 1)
       # => combine model with attribute to create unique key like user_name
       key = "#{@model.to_s}:#{attribute}"
-      REDI_SEARCH.call('FT.SUGADD', key, value, score)
+      string = record.send(attribute)
+      REDI_SEARCH.call('FT.SUGADD', key, string, score)
       # => INCR
     rescue Exception => e
       Rails.logger.error e if defined? Rails
@@ -234,7 +233,7 @@ module RediSearchRails
     #
     # @param attribute [String] - name, email, etc
     def ft_sugdel_all (attribute:)
-      @model.all.each {|record| ft_sugdel(attribute: attribute, value: record.send(attribute)) }
+      @model.all.each {|record| ft_sugdel(record: record, attribute: attribute) }
     rescue Exception => e
       Rails.logger.error e if defined? Rails
       return e.message
@@ -245,8 +244,9 @@ module RediSearchRails
     # @param attribute [String]
     # @param value [String] - string to delete
     # @return [Integer] - 1 if found, 0 if not
-    def ft_sugdel (attribute:, string:)
+    def ft_sugdel (record:, attribute:)
       key = "#{@model}:#{attribute}"
+      string = record.send(attribute)
       REDI_SEARCH.call('FT.SUGDEL', key, string)
     rescue Exception => e
       Rails.logger.error e if defined? Rails

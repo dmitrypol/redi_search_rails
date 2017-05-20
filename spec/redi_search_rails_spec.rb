@@ -164,8 +164,8 @@ RSpec.describe RediSearchRails do
   context 'ft_sug' do
     before(:each) do
       ['Bob', 'Bobby', 'Mary'].each_with_index do |name, index|
-        User.new(name: name)
-        test = User.ft_sugadd(attribute: 'name', value: name)
+        user = User.new(name: name)
+        test = User.ft_sugadd(record: user, attribute: 'name')
         expect(test).to eq index + 1
       end
     end
@@ -176,8 +176,8 @@ RSpec.describe RediSearchRails do
       #test = expect(User.ft_suglen(attribute: 'email')).to eq 2
     end
     it "ft_sugadd" do
-      User.new(email: 'foo')
-      expect(User.ft_sugadd(attribute: 'email', value: 'foo')).to eq 1
+      user = User.new(email: 'foo')
+      expect(User.ft_sugadd(record: user, attribute: 'email')).to eq 1
     end
     it "ft_sugget" do
       test = User.ft_sugget(attribute: 'name', prefix: 'b')
@@ -186,9 +186,11 @@ RSpec.describe RediSearchRails do
       expect(test).to eq ["Mary"]
     end
     it "ft_sugdel" do
-      test = User.ft_sugdel(attribute: 'name', string: 'Bob')
+      user = User.new(name: 'Susan')
+      User.ft_sugadd(record: user, attribute: 'name')
+      test = User.ft_sugdel(record: user, attribute: 'name')
       expect(test).to eq 1
-      test = User.ft_sugdel(attribute: 'name', string: 'Tom')
+      test = User.ft_sugdel(record: user, attribute: 'name')
       expect(test).to eq 0
     end
     it "ft_sugdel_all" do
@@ -200,9 +202,10 @@ RSpec.describe RediSearchRails do
     end
     it "ft_suglen" do
       expect(User.ft_suglen(attribute: 'name')).to eq 3
-      User.ft_sugadd(attribute: 'name', value: 'Tom')
+      user = User.new(name: 'Susan')
+      User.ft_sugadd(record: user, attribute: 'name')
       expect(User.ft_suglen(attribute: 'name')).to eq 4
-      User.ft_sugdel(attribute: 'name', string: 'Tom')
+      User.ft_sugdel(record: user, attribute: 'name')
       expect(User.ft_suglen(attribute: 'name')).to eq 3
     end
   end
