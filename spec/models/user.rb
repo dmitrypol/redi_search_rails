@@ -6,7 +6,7 @@ class User
   # define_model_callbacks :save, :destroy
 
   include RediSearchRails
-  redi_search_schema name: 'TEXT', age: 'NUMERIC'
+  redi_search_schema name: 'TEXT', email: 'TEXT', age: 'NUMERIC'
 
   def to_global_id
     "gid://redi_search_rails/User/#{SecureRandom.uuid}"

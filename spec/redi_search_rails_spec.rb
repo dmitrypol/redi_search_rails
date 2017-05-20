@@ -14,7 +14,7 @@ RSpec.describe RediSearchRails do
   end
 
   it "redi_search_schema" do
-    test = User.redi_search_schema(name: 'TEXT', age: 'NUMERIC')
+    test = User.redi_search_schema(name: 'TEXT', email: 'TEXT', age: 'NUMERIC')
     expect(test).to eq 1
     test = Role.redi_search_schema(name: 'TEXT')
     expect(test).to eq 1
@@ -23,8 +23,10 @@ RSpec.describe RediSearchRails do
   context 'ft_search' do
     before(:each) do
       User.ft_create
-      User.ft_add(record: User.new(name: 'Bob Smith', age: 100, email: 'bob@gmail.com'))
-      User.ft_add(record: User.new(name: 'Bobs', age: 50))
+      user1 = User.new(name: 'Bob Smith', age: 100, email: 'bob@gmail.com')
+      User.ft_add(record: user1)
+      user2 = User.new(name: 'Bobs', age: 50, email: 'bobs@gmail.com')
+      User.ft_add(record: user2)
       Role.ft_create
       Role.ft_add(record: Role.new(name: 'admin'))
     end
@@ -57,6 +59,7 @@ RSpec.describe RediSearchRails do
       expect(test[0].name).to eq 'admin'
     end
     it "ft_search_count" do
+      expect(User.ft_search_count(keyword: 'gmail')).to eq 2
       expect(User.ft_search_count(keyword: 'bob')).to eq 2
       expect(Role.ft_search_count(keyword: 'admin')).to eq 1
     end

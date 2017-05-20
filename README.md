@@ -1,5 +1,9 @@
 # RediSearchRails
 
+[![Code Climate](https://codeclimate.com/github/dmitrypol/redi_search_rails.svg)](https://codeclimate.com/github/dmitrypol/redi_search_rails)
+[![Inline docs](http://inch-ci.org/github/dmitrypol/redi_search_rails.svg?branch=master)](http://inch-ci.org/github/dmitrypol/redi_search_rails)
+[![Gem Version](https://badge.fury.io/rb/redi_search_rails.svg)](http://badge.fury.io/rb/redi_search_rails)
+
 This gems simplifies integration with RediSearch module (http://redisearch.io/).  This software is of Alpha quality and is provided with no warranties whatsoever.  Additionally RediSearch is still not officially released so major features may change.  
 
 ## Installation
@@ -69,6 +73,7 @@ Testing this gem requires having local Redis with RediSearch module.  This makes
 * Rake tasks to manage indexes
 * Support configuring SCORE, WEIGHT and other options
 * Support indexing fields from related models (index group name if user belongs to a group)
+* Support GEO filters
 * Stopwords configuration
 * Minimum keyword length to index
 * Configurable method for doc_id, not just default to_global_id
